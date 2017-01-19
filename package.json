@@ -1,5 +1,5 @@
 {
-  "name": "license-check",
+  "name": "license-scanner",
   "version": "1.0.0",
   "description": "Check Licenses directly from package.json and only to one level",
   "main": "check.js",
