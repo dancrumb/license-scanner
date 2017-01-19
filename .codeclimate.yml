@@ -7,8 +7,6 @@ engines:
       - javascript
   eslint:
     enabled: true
-    no-process-exit:
-      enabled: false
   fixme:
     enabled: true
 ratings:
