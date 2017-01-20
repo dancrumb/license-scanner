@@ -9,14 +9,15 @@ class DependencyStrategy {
         if (err.statusCode === 404) {
           return contentStrategy.getFile('README.md', 'master');
         }
+        throw err;
       })
       .then((fileContents) => {
         const license = inferLicense(fileContents);
         if (license) {
           return { raw: `${license}*`, corrected: license };
-        } else {
-          return { raw: 'UNLICENSED*', corrected: 'UNLICENSED' };
         }
+
+        return { raw: 'UNLICENSED*', corrected: 'UNLICENSED' };
       });
   }
 

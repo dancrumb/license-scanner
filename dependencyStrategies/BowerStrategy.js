@@ -3,7 +3,6 @@
  */
 import eventToPromise from 'event-to-promise';
 import bower from 'bower';
-import semver from 'semver';
 
 import DependencyStrategy from './DependencyStrategy';
 import GithubStrategy from './GithubStrategy';

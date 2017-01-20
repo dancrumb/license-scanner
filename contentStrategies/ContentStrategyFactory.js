@@ -28,7 +28,7 @@ class ContentStrategyFactory {
     throw new Error(`No strategy found for ${url}`);
   }
 
-  getContentStrategyByType(type) {
+  static getContentStrategyByType(type) {
     if (mapping[type]) {
       return mapping[type];
     }

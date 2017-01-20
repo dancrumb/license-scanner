@@ -7,9 +7,14 @@ class PrivateStrategy extends DependencyStrategy {
   constructor(packageName, url) {
     super();
     this.packageName = packageName;
+    this.license = Promise.resolve({
+      raw: 'UNLICENSED',
+      corrected: 'UNLICENSED',
+      private: true,
+    });
 
     if (URL_DECOMPOSER.test(url)) {
-      const [full, protocol, user, hostname, port, project, repo, ish] =
+      const [, protocol, /* user */, hostname, /* port */, project, repo, ish] =
         url.match(URL_DECOMPOSER);
 
       this.semVer = ish || '0.0.0';
@@ -19,8 +24,6 @@ class PrivateStrategy extends DependencyStrategy {
     } else {
       this.repo = url;
     }
-
-
   }
 
   getName() {
@@ -31,13 +34,8 @@ class PrivateStrategy extends DependencyStrategy {
     return this.semVer;
   }
 
-
   getLicense() {
-    return Promise.resolve({
-      raw: 'UNLICENSED',
-      corrected: 'UNLICENSED',
-      private: true,
-    });
+    return this.license;
   }
 
   getRepo() {

@@ -25,22 +25,6 @@ const dsFactory = new DependencyStrategyFactory([
   },
 ], targets.scopes);
 
-function pullLicenseInfo(licenseStrategy) {
-  return licenseStrategy.getFile('LICENSE.md', 'master')
-    .catch((err) => {
-      if (err.statusCode === 404) {
-        return licenseStrategy.getFile('README.md', 'master');
-      }
-    })
-    .then((fileContents) => {
-      const license = inferLicense(fileContents);
-      if (license) {
-        return { raw: `${license}*`, corrected: license };
-      }
-      return { raw: 'UNLICENSED*', corrected: 'UNLICENSED' };
-    });
-}
-
 function getLicenseFromRepo(dependencyStrategy) {
   return dependencyStrategy.getRepo().then((repo) => {
     if (!repo) {
@@ -52,7 +36,7 @@ function getLicenseFromRepo(dependencyStrategy) {
 
     if (repo.type === 'git') {
       const licenseStrategy = new GithubStrategy(repo.url);
-      return pullLicenseInfo(licenseStrategy);
+      return dependencyStrategy.pullLicenseInfo(licenseStrategy);
     }
 
     throw new Error(`Unknown repo type: ${repo.type}`);
@@ -114,8 +98,6 @@ function processFile(strategy, repo, path) {
     });
 }
 
-
-const permittedLicenses = `(${targets.permittedLicenses.join(' OR ')})`;
 const defaultRepoInfo = targets.defaultRepoInfo;
 
 _.forEach(targets.repos, (targetRepo) => {
@@ -126,8 +108,6 @@ _.forEach(targets.repos, (targetRepo) => {
   console.log(repo);
   const ConStrategy = csFactory.getContentStrategyByUrl(repo.hostname);
   const strategy = new ConStrategy(repo.project, repo.repo);
-  // const path = repo.paths[0];
   repo.paths.forEach(processFile.bind(null, strategy, repo));
-  // process(strategy, repo, path);
 });
 

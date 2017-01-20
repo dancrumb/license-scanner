@@ -38,7 +38,7 @@ function getPackageDetails(packageName) {
 
 function gemfileSpecifierToSemver(specifier) {
   if (/~>.*/.test(specifier)) {
-    const [__, major, minor, patch] = specifier.match(/~>\s*(?:(\d+)(?:\.(\d+)(?:\.(\d+))?)?)?/);
+    const [, major, minor, patch] = specifier.match(/~>\s*(?:(\d+)(?:\.(\d+)(?:\.(\d+))?)?)?/);
     if (patch !== undefined) {
       return `>= ${major}.${minor}.${patch} < ${major}.${+minor + 1}.0`;
     }
@@ -52,7 +52,6 @@ function gemfileSpecifierToSemver(specifier) {
 }
 
 function getVersionDetails(packageDetails, semVersion) {
-  console.log(arguments);
   const targetVersion = semver.maxSatisfying(Object.keys(packageDetails.versions), semVersion);
   return packageDetails.versions[targetVersion];
 }
@@ -75,20 +74,20 @@ class RubyGemsStrategy extends DependencyStrategy {
 
 
   getLicense() {
-    return this.details.then(packageDetails => packageDetails.versions)
-      .then((versionInfo) => {
-        const possibleVersions = versionInfo.map(info => info.number);
-        console.log(possibleVersions);
-        const targetVersion = semver.maxSatisfying(possibleVersions, this.semVer);
-        console.log(targetVersion);
-        const versionDetails = versionInfo.find(info => info.number === targetVersion);
-        console.log(versionDetails);
-        if (!versionDetails) {
-          throw new Error(`No details found for ${this.semVer} of ${this.packageName}`);
-        }
-        const mergedDetails = Object.assign({}, packageDetails, versionDetails);
-        return this.extractSPDXLicense(mergedDetails);
-      });
+    return this.details.then((packageDetails) => {
+      const versionInfo = packageDetails.versions;
+      const possibleVersions = versionInfo.map(info => info.number);
+      console.log(possibleVersions);
+      const targetVersion = semver.maxSatisfying(possibleVersions, this.semVer);
+      console.log(targetVersion);
+      const versionDetails = versionInfo.find(info => info.number === targetVersion);
+      console.log(versionDetails);
+      if (!versionDetails) {
+        throw new Error(`No details found for ${this.semVer} of ${this.packageName}`);
+      }
+      const mergedDetails = Object.assign({}, packageDetails, versionDetails);
+      return this.extractSPDXLicense(mergedDetails);
+    });
   }
 
   getRepo() {

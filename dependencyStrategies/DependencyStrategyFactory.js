@@ -43,7 +43,7 @@ class DependencyStrategyFactory {
     let strategy = getStrategyFromOptions(versionString, this.options);
 
     if (!strategy && SCOPED_PACKAGE.test(packageName)) {
-      const [__, scope, name] = packageName.match(SCOPED_PACKAGE);
+      const [, scope/* , name */] = packageName.match(SCOPED_PACKAGE);
       const scopeDetails = this.scopes[scope];
 
       if (scopeDetails) {
@@ -66,7 +66,7 @@ class DependencyStrategyFactory {
     return NPMStrategy;
   }
 
-  getDependencyStrategyByType(type) {
+  static getDependencyStrategyByType(type) {
     if (mapping[type]) {
       return mapping[type];
     }
