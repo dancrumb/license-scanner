@@ -3,8 +3,7 @@
  */
 import rp from 'request-promise';
 import rpErrors from 'request-promise/errors';
-
-const semver = require('semver');
+import semver from 'semver';
 
 import DependencyStrategy from './DependencyStrategy';
 

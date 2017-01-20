@@ -25,7 +25,11 @@ class BitbucketStrategy {
           console.error(`Couldn't find file at ${options.uri}`);
           throw new Error('Missing file');
         }
-        console.log(`Status Code Error for ${packageName}`);
+        if (reason.statusCode === 401) {
+          console.error(`Problems with authorization for ${options.uri}`);
+          throw new Error('Unauthorized access attempt. Please check STASH_USER and STASH_PASSWORD');
+        }
+        console.log(`Status Code Error for ${path}`);
         throw new Error(reason);
       });
   }

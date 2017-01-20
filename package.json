@@ -11,6 +11,8 @@
   "dependencies": {
     "async": "^2.1.4",
     "bluebird": "^3.4.7",
+    "bower": "^1.8.0",
+    "event-to-promise": "^0.7.0",
     "gemfile": "^1.0.0",
     "infer-license": "^1.0.1",
     "lodash": "^4.17.4",

@@ -66,6 +66,11 @@ const CONVERTERS = [
     normalizer: deps => deps,
   },
   {
+    pattern: /bower.json/,
+    dependencies: file => JSON.parse(file).dependencies,
+    normalizer: deps => deps,
+  },
+  {
     pattern: /Gemfile.lock/,
     dependencies: file => gemfile.interpret(file).DEPENDENCIES,
     normalizer: deps => Object.keys(deps).reduce((details, name) => {
@@ -76,7 +81,7 @@ const CONVERTERS = [
   },
 ];
 
-function process(strategy, repo, path) {
+function processFile(strategy, repo, path) {
   strategy.getFile(path, repo.commit || repo.branch)
     .then((file) => {
       const converter = CONVERTERS.find(option => option.pattern.test(path));
@@ -122,7 +127,7 @@ _.forEach(targets.repos, (targetRepo) => {
   const ConStrategy = csFactory.getContentStrategyByUrl(repo.hostname);
   const strategy = new ConStrategy(repo.project, repo.repo);
   // const path = repo.paths[0];
-  repo.paths.forEach(process.bind(null, strategy, repo));
+  repo.paths.forEach(processFile.bind(null, strategy, repo));
   // process(strategy, repo, path);
 });
 

@@ -1,4 +1,5 @@
 import NPMStrategy from './NPMStrategy';
+import BowerStrategy from './BowerStrategy';
 import GithubStrategy from './GithubStrategy';
 import PrivateStrategy from './PrivateStrategy';
 import RubyGemsStrategy from './RubyGemsStrategy';
@@ -9,6 +10,7 @@ const mapping = {
   github: GithubStrategy,
   npm: NPMStrategy,
   private: PrivateStrategy,
+  bower: BowerStrategy,
 };
 
 function getStrategyFromOptions(version, options) {
@@ -49,12 +51,16 @@ class DependencyStrategyFactory {
       }
     }
 
-    if (!strategy && /Gemfile/.test(source)) {
+    if (strategy) {
+      return strategy;
+    }
+
+    if (/Gemfile/.test(source)) {
       return RubyGemsStrategy;
     }
 
-    if (strategy) {
-      return strategy;
+    if (/bower.json/.test(source)) {
+      return BowerStrategy;
     }
 
     return NPMStrategy;
