@@ -58,8 +58,7 @@ function getVersionDetails(packageDetails, semVersion) {
 
 class RubyGemsStrategy extends DependencyStrategy {
   constructor(packageName, versionSpecifier) {
-    super();
-    this.packageName = packageName;
+    super(packageName, versionSpecifier);
     this.semVer = gemfileSpecifierToSemver(versionSpecifier);
     this.details = getPackageDetails(packageName);
   }

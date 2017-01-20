@@ -2,6 +2,10 @@ import spdxCorrect from 'spdx-correct';
 import { inferLicense } from 'infer-license';
 
 class DependencyStrategy {
+  constructor(packageName, semVer) {
+    this.packageName = packageName;
+    this.semVer = semVer;
+  }
 
   pullLicenseInfo(contentStrategy) {
     return contentStrategy.getFile('LICENSE.md', 'master')

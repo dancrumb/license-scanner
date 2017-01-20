@@ -5,7 +5,7 @@ const URL_DECOMPOSER = /^([^:]+):\/\/(?:(.*)@)?([^/:]*)(?::(\d*))?\/([^/]*)\/([^
 
 class PrivateStrategy extends DependencyStrategy {
   constructor(packageName, url) {
-    super();
+    super(packageName, '0.0.0');
     this.packageName = packageName;
     this.license = Promise.resolve({
       raw: 'UNLICENSED',

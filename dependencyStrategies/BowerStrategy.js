@@ -23,9 +23,7 @@ function getPackageDetails(packageName) {
 
 class BowerStrategy extends DependencyStrategy {
   constructor(packageName, semVer) {
-    super();
-    this.packageName = packageName;
-    this.semVer = semVer;
+    super(packageName, semVer);
     this.details = getPackageDetails(packageName);
   }
 

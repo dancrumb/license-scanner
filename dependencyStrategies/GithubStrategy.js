@@ -58,8 +58,7 @@ function getOwnerAndRepo(string) {
 
 class GithubStrategy extends DependencyStrategy {
   constructor(packageName, semVer) {
-    super();
-    this.packageName = packageName;
+    super(packageName, semVer);
     const [__, owner, repoName] = getOwnerAndRepo(semVer);
     if (!__) {
       throw new Error(`No match for ${semVer}`);
