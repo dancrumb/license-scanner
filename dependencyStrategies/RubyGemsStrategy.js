@@ -5,7 +5,9 @@ import rp from 'request-promise';
 import rpErrors from 'request-promise/errors';
 import semver from 'semver';
 import DependencyStrategy from './DependencyStrategy';
+import RubyGemsParser from '../parsers/RubyGemsParser';
 
+const arrayToObject = (a, key) => a.reduce((o, ae) => Object.assign(o, { [ae[key]]: ae }), {});
 const packageCache = {};
 function getPackageDetails(packageName) {
   if (!packageCache[packageName]) {
@@ -22,15 +24,12 @@ function getPackageDetails(packageName) {
         console.log(`Status Code Error for ${packageName}`);
         throw new Error(reason);
       })
-      .then((details) => {
-        // eslint-disable-next-line no-param-reassign
-        details.versions = rp.get({
-          uri: `https://rubygems.org/api/v1/versions/${packageName}.json`,
-          method: 'GET',
-          json: true,
-        });
-        return details;
-      });
+      .then(details => rp.get({
+        uri: `https://rubygems.org/api/v1/versions/${packageName}.json`,
+        method: 'GET',
+        json: true,
+      }).then(versions =>
+        Object.assign(details, { versions: arrayToObject(versions.filter(v => semver.valid(v.number)), 'number') })));
   }
 
   return packageCache[packageName];
@@ -52,7 +51,7 @@ function gemfileSpecifierToSemver(specifier) {
 }
 
 function getVersionDetails(packageDetails, semVersion) {
-  const targetVersion = semver.maxSatisfying(Object.keys(packageDetails.versions), semVersion);
+  const targetVersion = semver.maxSatisfying(packageDetails.versionList, semVersion);
   return packageDetails.versions[targetVersion];
 }
 
@@ -73,25 +72,20 @@ class RubyGemsStrategy extends DependencyStrategy {
 
 
   getLicense() {
-    return this.details.then((packageDetails) => {
-      const versionInfo = packageDetails.versions;
-      const possibleVersions = versionInfo.map(info => info.number);
-      console.log(possibleVersions);
-      const targetVersion = semver.maxSatisfying(possibleVersions, this.semVer);
-      console.log(targetVersion);
-      const versionDetails = versionInfo.find(info => info.number === targetVersion);
-      console.log(versionDetails);
-      if (!versionDetails) {
-        throw new Error(`No details found for ${this.semVer} of ${this.packageName}`);
-      }
-      const mergedDetails = Object.assign({}, packageDetails, versionDetails);
-      return this.extractSPDXLicense(mergedDetails);
-    });
+    return this.details.then(details => RubyGemsParser.parse(details, this.semVer));
   }
 
   getRepo() {
     return this.details.then((packageDetails) => {
-      const versionDetails = getVersionDetails(packageDetails, this.semVer);
+      const versionInfo = packageDetails.versions;
+      const possibleVersions = Object.keys(versionInfo);
+      if (!possibleVersions) {
+        console.log(`No versions found for ${packageDetails.name}`);
+      }
+      console.log(packageDetails.name, possibleVersions, this.semVer);
+      const targetVersion = semver.maxSatisfying(possibleVersions, this.semVer);
+      const versionDetails = versionInfo[targetVersion];
+      console.log(versionDetails);
       const repo = versionDetails.repository || packageDetails.repository;
       return repo;
     });
