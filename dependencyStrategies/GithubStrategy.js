@@ -21,8 +21,8 @@ function getPackageDetails(owner, repo) {
         'User-Agent': 'License-Checker',
       },
       auth: {
-        user: 'dancrumb',
-        password: '0e3cc1d1f346ad753830e65d9c2456f844308c44',
+        user: process.env.GITHUB_USER,
+        password: process.env.GITHUB_AUTH,
       },
       json: true,
     })
@@ -37,6 +37,9 @@ function getPackageDetails(owner, repo) {
         }
         if (reason.statusCode === 403) {
           throw new Error('Looks like we got ourselves rate-limited');
+        }
+        if (reason.statusCode === 401) {
+          throw new Error('Looks like your authentication details are bad. Check GITHUB_USER and GITHUB_AUTH');
         }
         console.error(`https://api.github.com/repos/${owner}/${repo}/license`);
         console.error(reason);
@@ -62,21 +65,20 @@ const DESTRUCTURERS = [
 
 function getOwnerAndRepo(string) {
   const destructor = DESTRUCTURERS.find(pattern => pattern.test(string));
-  return string.match(destructor);
+  const [, owner, repo] = string.match(destructor);
+  if (!owner) {
+    throw new Error(`No owner/repo match for ${string}`);
+  }
+  return [owner, repo];
 }
 
 class GithubStrategy extends DependencyStrategy {
   constructor(packageName, semVer) {
     super(packageName, semVer);
-    const [__, owner, repoName] = getOwnerAndRepo(semVer);
-    if (!__) {
-      throw new Error(`No match for ${semVer}`);
-    }
-    this.owner = owner;
-    this.repoName = repoName;
-    this.contentStrategy = new GithubContentStrategy(owner, repoName);
+    [this.owner, this.repoName] = getOwnerAndRepo(semVer);
+    this.contentStrategy = new GithubContentStrategy(this.owner, this.repoName);
 
-    this.details = getPackageDetails(owner, repoName);
+    this.details = getPackageDetails(this.owner, this.repoName);
   }
 
   getName() {
