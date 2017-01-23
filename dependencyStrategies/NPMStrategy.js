@@ -21,7 +21,7 @@ function getPackageDetails(packageName) {
           console.error(`Package '${packageName}' is not on NPM. The wrong strategy was selected`);
           throw new Error(`Incorrect Strategy used for ${packageName}`);
         }
-        console.log(`Status Code Error for ${packageName}`);
+        console.error(`Status Code Error for ${packageName}`);
         throw new Error(reason);
       });
   }
@@ -38,28 +38,13 @@ class NPMStrategy extends DependencyStrategy {
   constructor(packageName, semVer) {
     super(packageName, semVer);
     this.details = getPackageDetails(packageName);
-  }
-
-  getName() {
-    return this.packageName;
-  }
-
-  getSemver() {
-    return this.semVer;
-  }
-
-
-  getLicense() {
-    return this.details.then((packageDetails) => {
-      return PackageParser.parser(packageDetails, this.semVer);
-    });
+    this.parser = PackageParser;
   }
 
   getRepo() {
     return this.details.then((packageDetails) => {
       const versionDetails = getVersionDetails(packageDetails, this.semVer);
-      const repo = versionDetails.repository || packageDetails.repository;
-      return repo;
+      return versionDetails.repository || packageDetails.repository;
     });
   }
 

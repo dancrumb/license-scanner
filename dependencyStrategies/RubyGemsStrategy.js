@@ -21,7 +21,7 @@ function getPackageDetails(packageName) {
           console.error(`Package '${packageName}' is not on RubyGems. The wrong strategy was selected`);
           throw new Error(`Incorrect Strategy used for ${packageName}`);
         }
-        console.log(`Status Code Error for ${packageName}`);
+        console.error(`Status Code Error for ${packageName}`);
         throw new Error(reason);
       })
       .then(details => rp.get({
@@ -50,29 +50,12 @@ function gemfileSpecifierToSemver(specifier) {
   }
 }
 
-function getVersionDetails(packageDetails, semVersion) {
-  const targetVersion = semver.maxSatisfying(packageDetails.versionList, semVersion);
-  return packageDetails.versions[targetVersion];
-}
-
 class RubyGemsStrategy extends DependencyStrategy {
   constructor(packageName, versionSpecifier) {
     super(packageName, versionSpecifier);
     this.semVer = gemfileSpecifierToSemver(versionSpecifier);
     this.details = getPackageDetails(packageName);
-  }
-
-  getName() {
-    return this.packageName;
-  }
-
-  getSemver() {
-    return this.semVer;
-  }
-
-
-  getLicense() {
-    return this.details.then(details => RubyGemsParser.parse(details, this.semVer));
+    this.parser = RubyGemsParser;
   }
 
   getRepo() {
@@ -80,14 +63,23 @@ class RubyGemsStrategy extends DependencyStrategy {
       const versionInfo = packageDetails.versions;
       const possibleVersions = Object.keys(versionInfo);
       if (!possibleVersions) {
-        console.log(`No versions found for ${packageDetails.name}`);
+        console.error(`No versions found for ${packageDetails.name}`);
       }
-      console.log(packageDetails.name, possibleVersions, this.semVer);
+
       const targetVersion = semver.maxSatisfying(possibleVersions, this.semVer);
       const versionDetails = versionInfo[targetVersion];
-      console.log(versionDetails);
-      const repo = versionDetails.repository || packageDetails.repository;
-      return repo;
+
+      const repoUri = versionDetails.source_code_uri || packageDetails.source_code_uri;
+      if (/github/.test(repoUri)) {
+        return {
+          url: repoUri,
+          type: 'git',
+        };
+      }
+      return {
+        url: repoUri,
+        type: 'unknown',
+      };
     });
   }
 

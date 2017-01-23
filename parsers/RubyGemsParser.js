@@ -17,9 +17,8 @@ class RubyGemsParser {
     const versionInfo = packageObject.versions;
     const possibleVersions = Object.keys(versionInfo);
     if (!possibleVersions) {
-      console.log(`No versions found for ${packageObject.name}`);
+      console.error(`No versions found for ${packageObject.name}`);
     }
-    console.log(packageObject.name, possibleVersions, version);
     const targetVersion = semver.maxSatisfying(possibleVersions, version);
     const versionDetails = versionInfo[targetVersion];
     if (!versionDetails) {
@@ -37,15 +36,16 @@ class RubyGemsParser {
         return {
           raw: license,
           corrected: spdxCorrect(license),
+          source: 'RubyGems',
         };
       }
 
       const licenses = mergedDetails.licenses;
       if (licenses) {
-        console.log(licenses);
         return {
           raw: licenses.map(getLicenseType).join(' OR '),
           corrected: licenses.map(getLicenseType).map(spdxCorrect).join(' OR '),
+          source: 'RubyGems',
         };
       }
     } catch (e) {

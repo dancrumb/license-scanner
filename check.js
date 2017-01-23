@@ -36,7 +36,7 @@ function getLicenseFromRepo(dependencyStrategy) {
 
     if (repo.type === 'git') {
       const licenseStrategy = new GithubStrategy(repo.url);
-      return dependencyStrategy.pullLicenseInfo(licenseStrategy);
+      return dependencyStrategy.constructor.pullLicenseInfo(licenseStrategy);
     }
 
     throw new Error(`Unknown repo type: ${repo.type}`);
@@ -72,7 +72,6 @@ function processFile(strategy, repo, path) {
       return converter.normalizer(converter.dependencies(file));
     })
     .then((dependencies) => {
-      console.log(dependencies);
       const strategies = _.map(dependencies,
         (semVersion, packageName) => {
           const DepStrategy = dsFactory.getDependencyStrategy(path, packageName, semVersion);
@@ -105,7 +104,6 @@ _.forEach(targets.repos, (targetRepo) => {
     return;
   }
   const repo = Object.assign({}, defaultRepoInfo, targetRepo);
-  console.log(repo);
   const ConStrategy = csFactory.getContentStrategyByUrl(repo.hostname);
   const strategy = new ConStrategy(repo.project, repo.repo);
   repo.paths.forEach(processFile.bind(null, strategy, repo));

@@ -10,7 +10,7 @@ function buildOptions(url, path, ish) {
 class GithubStrategy {
   constructor(owner, repo) {
     if (!repo) {
-      const found = owner.match(/git(?:\+https?|ssh)?:\/\/github.com\/([^/]+)\/([^/]+).git/);
+      const found = owner.match(/(?:https?|git(?:\+https?|ssh)):\/\/github.com\/([^/]+)\/([^/]+)(?:.git)?/);
       if (found) {
         this.url = `/${found[1]}/${found[2]}`;
       } else {

@@ -4,12 +4,8 @@
 import rp from 'request-promise';
 import rpErrors from 'request-promise/errors';
 
-import TextParser from '../parsers/TextParser';
-import NoLicenseError from '../parsers/NoLicenseError';
 import DependencyStrategy from './DependencyStrategy';
-import GithubContentStrategy from '../contentStrategies/GithubStrategy';
-
-const base64ToString = b64 => (new Buffer(b64, 'base64')).toString();
+import GithubAPIParser from '../parsers/GithubAPIParser';
 
 const packageCache = {};
 function getPackageDetails(owner, repo) {
@@ -76,36 +72,8 @@ class GithubStrategy extends DependencyStrategy {
   constructor(packageName, semVer) {
     super(packageName, semVer);
     [this.owner, this.repoName] = getOwnerAndRepo(semVer);
-    this.contentStrategy = new GithubContentStrategy(this.owner, this.repoName);
-
     this.details = getPackageDetails(this.owner, this.repoName);
-  }
-
-  getName() {
-    return this.packageName;
-  }
-
-  getSemver() {
-    return this.semVer;
-  }
-
-
-  getLicense() {
-    return this.details.then(packageDetails => packageDetails.license)
-      .then((license) => {
-        console.log(this.packageName);
-        console.log(license);
-        if (!license.raw) {
-          throw new NoLicenseError();
-        }
-        return license;
-      })
-      .catch(() => this.details.then(packageDetails => packageDetails.content)
-          .then((licenseContent) => {
-            const licenseText = base64ToString(licenseContent);
-            return TextParser.parse(licenseText, 'Github API License');
-          }))
-      .catch(() => DependencyStrategy.pullLicenseInfo(this.contentStrategy));
+    this.parser = GithubAPIParser;
   }
 
   getRepo() {

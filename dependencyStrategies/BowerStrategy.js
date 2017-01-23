@@ -27,15 +27,6 @@ class BowerStrategy extends DependencyStrategy {
     this.details = getPackageDetails(packageName);
   }
 
-  getName() {
-    return this.packageName;
-  }
-
-  getSemver() {
-    return this.semVer;
-  }
-
-
   getLicense() {
     return this.details.then(packageDetails =>
       new GithubStrategy(this.packageName, packageDetails.url).getLicense());

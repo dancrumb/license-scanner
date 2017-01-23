@@ -28,7 +28,7 @@ class BitbucketStrategy {
           throw new Error(`Unauthorized access attempt to ${options.uri}. ` +
             'Please check STASH_USER and STASH_PASSWORD');
         }
-        console.log(`Status Code Error for ${path}`);
+        console.error(`Status Code Error for ${path}`);
         throw new Error(reason);
       });
   }

@@ -16,6 +16,10 @@ const SOURCES_INFO = [
     parser: TextParser,
   },
   {
+    path: 'LICENSE.markdown',
+    parser: TextParser,
+  },
+  {
     path: 'README.md',
     parser: TextParser,
   },
@@ -25,6 +29,10 @@ const SOURCES_INFO = [
   },
   {
     path: 'readme.md',
+    parser: TextParser,
+  },
+  {
+    path: 'README.markdown',
     parser: TextParser,
   },
 ];
@@ -40,9 +48,21 @@ class DependencyStrategy {
     const sources = SOURCES_INFO.map(source => () =>
       contentStrategy.getFile(source.path, 'master')
         .then(packageFile => source.parser.parse(packageFile))
-        .then(licenseInfo => Object.assign(licenseInfo, { source: `Inferred from ${source.path}.` })));
+        .then(licenseInfo => Object.assign(licenseInfo, { source: `Inferred from source code (${source.path}).` })));
 
     return plan.fallback(sources);
+  }
+
+  getName() {
+    return this.packageName;
+  }
+
+  getSemver() {
+    return this.semVer;
+  }
+
+  getLicense() {
+    return this.details.then(details => this.parser.parse(details, this.semVer));
   }
 }
 
