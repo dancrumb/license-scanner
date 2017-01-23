@@ -6,6 +6,7 @@ import rpErrors from 'request-promise/errors';
 import semver from 'semver';
 
 import DependencyStrategy from './DependencyStrategy';
+import PackageParser from '../parsers/PackageParser';
 
 const packageCache = {};
 function getPackageDetails(packageName) {
@@ -50,12 +51,7 @@ class NPMStrategy extends DependencyStrategy {
 
   getLicense() {
     return this.details.then((packageDetails) => {
-      const versionDetails = getVersionDetails(packageDetails, this.semVer);
-      if (!versionDetails) {
-        throw new Error(`No details found for ${this.semVer} of ${this.packageName}`);
-      }
-      const mergedDetails = Object.assign({}, packageDetails, versionDetails);
-      return this.extractSPDXLicense(mergedDetails);
+      return PackageParser.parser(packageDetails, this.semVer);
     });
   }
 

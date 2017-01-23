@@ -2,3 +2,5 @@
 /dist
 targets.json
 
+.DS_Store
+npm-debug.log

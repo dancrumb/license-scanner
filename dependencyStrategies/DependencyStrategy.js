@@ -1,5 +1,34 @@
-import spdxCorrect from 'spdx-correct';
-import { inferLicense } from 'infer-license';
+import plan from 'fallback-plan';
+import TextParser from '../parsers/TextParser';
+import PackageParser from '../parsers/PackageParser';
+
+const SOURCES_INFO = [
+  {
+    path: 'package.json',
+    parser: PackageParser,
+  },
+  {
+    path: 'LICENSE.md',
+    parser: TextParser,
+  },
+  {
+    path: 'LICENSE',
+    parser: TextParser,
+  },
+  {
+    path: 'README.md',
+    parser: TextParser,
+  },
+  {
+    path: 'README',
+    parser: TextParser,
+  },
+  {
+    path: 'readme.md',
+    parser: TextParser,
+  },
+];
+
 
 class DependencyStrategy {
   constructor(packageName, semVer) {
@@ -7,53 +36,14 @@ class DependencyStrategy {
     this.semVer = semVer;
   }
 
-  pullLicenseInfo(contentStrategy) {
-    return contentStrategy.getFile('LICENSE.md', 'master')
-      .catch((err) => {
-        if (err.statusCode === 404) {
-          return contentStrategy.getFile('README.md', 'master');
-        }
-        throw err;
-      })
-      .then((fileContents) => {
-        const license = inferLicense(fileContents);
-        if (license) {
-          return { raw: `${license}*`, corrected: license };
-        }
+  static pullLicenseInfo(contentStrategy) {
+    const sources = SOURCES_INFO.map(source => () =>
+      contentStrategy.getFile(source.path, 'master')
+        .then(packageFile => source.parser.parse(packageFile))
+        .then(licenseInfo => Object.assign(licenseInfo, { source: `Inferred from ${source.path}.` })));
 
-        return { raw: 'UNLICENSED*', corrected: 'UNLICENSED' };
-      });
+    return plan.fallback(sources);
   }
-
-  extractSPDXLicense(mergedDetails) {
-    const license = (typeof mergedDetails.license === 'object') ? mergedDetails.license.type : mergedDetails.license;
-    try {
-      if (license) {
-        return {
-          raw: license,
-          corrected: spdxCorrect(license),
-        };
-      }
-      const licenses = mergedDetails.licenses;
-      if (licenses) {
-        return {
-          raw: licenses.map(l => l.type).join(' OR '),
-          corrected: licenses.map(l => l.type).map(spdxCorrect).join(' OR '),
-        };
-      }
-    } catch (e) {
-      console.error('Error trying to correct SPDX strings for:');
-      console.error(mergedDetails.license);
-      console.error(mergedDetails.licenses);
-      throw e;
-    }
-
-    return {
-      raw: '',
-      corrected: '',
-    };
-  }
-
 }
 
 export default DependencyStrategy;

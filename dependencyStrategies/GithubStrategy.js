@@ -3,9 +3,13 @@
  */
 import rp from 'request-promise';
 import rpErrors from 'request-promise/errors';
-import { inferLicense } from 'infer-license';
 
+import TextParser from '../parsers/TextParser';
+import NoLicenseError from '../parsers/NoLicenseError';
 import DependencyStrategy from './DependencyStrategy';
+import GithubContentStrategy from '../contentStrategies/GithubStrategy';
+
+const base64ToString = b64 => (new Buffer(b64, 'base64')).toString();
 
 const packageCache = {};
 function getPackageDetails(owner, repo) {
@@ -16,6 +20,10 @@ function getPackageDetails(owner, repo) {
       headers: {
         'User-Agent': 'License-Checker',
       },
+      auth: {
+        user: 'dancrumb',
+        password: '0e3cc1d1f346ad753830e65d9c2456f844308c44',
+      },
       json: true,
     })
       .catch(rpErrors.StatusCodeError, (reason) => {
@@ -23,7 +31,7 @@ function getPackageDetails(owner, repo) {
           console.error(`404 from https://api.github.com/repos/${owner}/${repo}/license`);
           return {
             license: {
-              spdx_id: 'UNLICENSED',
+              spdx_id: undefined,
             },
           };
         }
@@ -39,6 +47,7 @@ function getPackageDetails(owner, repo) {
         license: {
           raw: licenseInfo.license.spdx_id,
           corrected: licenseInfo.license.spdx_id,
+          source: 'Github API License, Reported',
         },
       }));
   }
@@ -46,13 +55,13 @@ function getPackageDetails(owner, repo) {
   return packageCache[`${owner}/${repo}`];
 }
 
-const DESTRUCTORS = [
+const DESTRUCTURERS = [
   /github:([^/]*)\/(.*)/,
   /[^:]*:\/\/github.com\/([^/]*)\/([^/]*).git/,
 ];
 
 function getOwnerAndRepo(string) {
-  const destructor = DESTRUCTORS.find(pattern => pattern.test(string));
+  const destructor = DESTRUCTURERS.find(pattern => pattern.test(string));
   return string.match(destructor);
 }
 
@@ -65,6 +74,7 @@ class GithubStrategy extends DependencyStrategy {
     }
     this.owner = owner;
     this.repoName = repoName;
+    this.contentStrategy = new GithubContentStrategy(owner, repoName);
 
     this.details = getPackageDetails(owner, repoName);
   }
@@ -81,21 +91,19 @@ class GithubStrategy extends DependencyStrategy {
   getLicense() {
     return this.details.then(packageDetails => packageDetails.license)
       .then((license) => {
+        console.log(this.packageName);
         console.log(license);
         if (!license.raw) {
-          console.error('No License found via API');
-          return this.details.then(packageDetails => packageDetails.content)
-            .then((licenseContent) => {
-              const b = new Buffer(licenseContent, 'base64');
-              const licenseText = b.toString();
-              return {
-                raw: inferLicense(licenseText),
-                corrected: inferLicense(licenseText),
-              };
-            });
+          throw new NoLicenseError();
         }
         return license;
-      });
+      })
+      .catch(() => this.details.then(packageDetails => packageDetails.content)
+          .then((licenseContent) => {
+            const licenseText = base64ToString(licenseContent);
+            return TextParser.parse(licenseText, 'Github API License');
+          }))
+      .catch(() => DependencyStrategy.pullLicenseInfo(this.contentStrategy));
   }
 
   getRepo() {
