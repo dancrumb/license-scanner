@@ -4,32 +4,40 @@
 import rp from 'request-promise';
 import rpErrors from 'request-promise/errors';
 import semver from 'semver';
+import _ from 'lodash';
 import DependencyStrategy from './DependencyStrategy';
 import RubyGemsParser from '../parsers/RubyGemsParser';
 
-const arrayToObject = (a, key) => a.reduce((o, ae) => Object.assign(o, { [ae[key]]: ae }), {});
+const validVersion = vs => vs.filter(v => semver.valid(v.number));
+const injectVersions = (d, vs) => Object.assign(d, { versions: _.keyBy(validVersion(vs), 'number') });
+
+const handleRubyGemsError = (packageName, reason) => {
+  if (reason.statusCode === 404) {
+    throw new Error(`Incorrect Strategy used for ${packageName}`);
+  }
+  if (reason.statusCode === 429) {
+    throw new Error('Rate limited by RubyGems');
+  }
+
+  throw new Error(`Status Code Error for ${packageName}: ${reason.statusCode}`);
+};
+
+const rubyGemsAPICall = (packageName, resource) => rp.get({
+  uri: `https://rubygems.org/api/v1/${resource}/${packageName}.json`,
+  method: 'GET',
+  json: true,
+})
+  .catch(rpErrors.StatusCodeError, reason => handleRubyGemsError(packageName, reason));
+
+const getPackageVersions = (packageName, details) =>
+  rubyGemsAPICall(packageName, 'versions')
+    .then(versions => injectVersions(details, versions));
+
 const packageCache = {};
 function getPackageDetails(packageName) {
   if (!packageCache[packageName]) {
-    packageCache[packageName] = rp.get({
-      uri: `https://rubygems.org/api/v1/gems/${packageName}.json`,
-      method: 'GET',
-      json: true,
-    })
-      .catch(rpErrors.StatusCodeError, (reason) => {
-        if (reason.statusCode === 404) {
-          console.error(`Package '${packageName}' is not on RubyGems. The wrong strategy was selected`);
-          throw new Error(`Incorrect Strategy used for ${packageName}`);
-        }
-        console.error(`Status Code Error for ${packageName}`);
-        throw new Error(reason);
-      })
-      .then(details => rp.get({
-        uri: `https://rubygems.org/api/v1/versions/${packageName}.json`,
-        method: 'GET',
-        json: true,
-      }).then(versions =>
-        Object.assign(details, { versions: arrayToObject(versions.filter(v => semver.valid(v.number)), 'number') })));
+    packageCache[packageName] = rubyGemsAPICall(packageName, 'gems')
+      .then(details => getPackageVersions(packageName, details));
   }
 
   return packageCache[packageName];

@@ -62,7 +62,7 @@ class DependencyStrategy {
   }
 
   getLicense() {
-    return this.details.then(details => this.parser.parse(details, this.semVer));
+    return this.details.then((details => this.parser.parse(details, this.semVer)));
   }
 }
 

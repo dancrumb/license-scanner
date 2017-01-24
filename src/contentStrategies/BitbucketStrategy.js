@@ -22,7 +22,7 @@ class BitbucketStrategy {
     return rp.get(options).auth(process.env.STASH_USER, process.env.STASH_PASSWORD)
       .catch(rpErrors.StatusCodeError, (reason) => {
         if (reason.statusCode === 404) {
-          throw new Error(`Couldn't find file at ${options.uri}`);
+          throw new Error(`Couldn't find file at ${reason.href}`);
         }
         if (reason.statusCode === 401) {
           throw new Error(`Unauthorized access attempt to ${options.uri}. ` +

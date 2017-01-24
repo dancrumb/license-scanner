@@ -1,15 +1,14 @@
 import _ from 'lodash';
 import Promise from 'bluebird';
-import { inferLicense } from 'infer-license';
-
 import gemfile from 'gemfile';
 
-import ContentStrategyFactory from './contentStrategies/ContentStrategyFactory';
-import DependencyStrategyFactory from './dependencyStrategies/DependencyStrategyFactory';
+import ContentStrategyFactory from './src/contentStrategies/ContentStrategyFactory';
+import DependencyStrategyFactory from './src/dependencyStrategies/DependencyStrategyFactory';
 
-import GithubStrategy from './contentStrategies/GithubStrategy';
+import promiseProtector from './PromiseProtector';
 
 const targets = require('./targets.json');
+
 
 const csFactory = new ContentStrategyFactory([
   {
@@ -35,6 +34,7 @@ function getLicenseFromRepo(dependencyStrategy) {
     }
 
     if (repo.type === 'git') {
+      const GithubStrategy = ContentStrategyFactory.getContentStrategyByType('github');
       const licenseStrategy = new GithubStrategy(repo.url);
       return dependencyStrategy.constructor.pullLicenseInfo(licenseStrategy);
     }
@@ -65,8 +65,24 @@ const CONVERTERS = [
   },
 ];
 
+function getLicenseViaStrategy(strategy) {
+  return strategy.getLicense()
+    .catch((e) => {
+      console.error(`ERROR: ${e.message}`);
+    })
+    .then((license) => {
+      if (license.raw === '') {
+        return getLicenseFromRepo(strategy);
+      }
+      return license;
+    })
+    .catch((e) => {
+      console.error(`ERROR: ${e.message}`);
+    });
+}
+
 function processFile(strategy, repo, path) {
-  strategy.getFile(path, repo.commit || repo.branch)
+  return strategy.getFile(path, repo.commit || repo.branch)
     .then((file) => {
       const converter = CONVERTERS.find(option => option.pattern.test(path));
       return converter.normalizer(converter.dependencies(file));
@@ -79,33 +95,44 @@ function processFile(strategy, repo, path) {
           return new DepStrategy(packageName, semVersion);
         });
 
-      Promise.all(strategies.map(dependencyStrategy => dependencyStrategy.getLicense()
-        .then((license) => {
-          if (license.raw === '') {
-            return getLicenseFromRepo(dependencyStrategy);
-          }
-          return license;
-        })
-        .then(license => ({
-          product: repo.name,
-          name: dependencyStrategy.getName(),
-          semver: dependencyStrategy.getSemver(),
-          license,
-        })))).then((licenses) => {
-          console.log(licenses);
-        });
+      Promise.all(strategies.map(dependencyStrategy =>
+        getLicenseViaStrategy(dependencyStrategy)
+          .then(license => ({
+            product: repo.name,
+            name: dependencyStrategy.getName(),
+            semver: dependencyStrategy.getSemver(),
+            license,
+          }))));
     });
 }
 
 const defaultRepoInfo = targets.defaultRepoInfo;
 
-_.forEach(targets.repos, (targetRepo) => {
-  if (targetRepo.skip) {
-    return;
-  }
-  const repo = Object.assign({}, defaultRepoInfo, targetRepo);
-  const ConStrategy = csFactory.getContentStrategyByUrl(repo.hostname);
-  const strategy = new ConStrategy(repo.project, repo.repo);
-  repo.paths.forEach(processFile.bind(null, strategy, repo));
-});
+Promise.all(
+  targets.repos
+    .filter(r => !r.skip)
+    .map((targetRepo) => {
+      console.log(targetRepo);
+      const repo = Object.assign({}, defaultRepoInfo, targetRepo);
+      const ConStrategy = csFactory.getContentStrategyByUrl(repo.hostname);
+      const strategy = new ConStrategy(repo.project, repo.repo);
+      return Promise.all(repo.paths.map(path => processFile(strategy, repo, path)
+        .catch((e) => {
+          console.error(`ERROR: ${e}`);
+        }).then((licenses) => {
+          console.log(licenses);
+        })));
+    }))
+  .then(() => {
+    setTimeout(() => {
+      console.log('Checking For Promises');
+      if (promiseProtector.hasUnhandledPromises()) {
+        console.error('Unhandled Promises');
+        promiseProtector.getUnhandledPromises().forEach((uP) => {
+          console.error(uP);
+        });
+      }
+      console.log('Done Checking');
+    }, 0);
+  });
 
