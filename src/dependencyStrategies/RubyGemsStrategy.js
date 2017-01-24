@@ -29,18 +29,12 @@ const rubyGemsAPICall = (packageName, resource) => rp.get({
 })
   .catch(rpErrors.StatusCodeError, reason => handleRubyGemsError(packageName, reason));
 
-const getPackageVersions = (packageName, details) =>
-  rubyGemsAPICall(packageName, 'versions')
-    .then(versions => injectVersions(details, versions));
+const getPackageVersions = (packageName, details) => rubyGemsAPICall(packageName, 'versions')
+  .then(versions => injectVersions(details, versions));
 
-const packageCache = {};
 function getPackageDetails(packageName) {
-  if (!packageCache[packageName]) {
-    packageCache[packageName] = rubyGemsAPICall(packageName, 'gems')
+  return rubyGemsAPICall(packageName, 'gems')
       .then(details => getPackageVersions(packageName, details));
-  }
-
-  return packageCache[packageName];
 }
 
 function gemfileSpecifierToSemver(specifier) {
@@ -52,10 +46,13 @@ function gemfileSpecifierToSemver(specifier) {
     if (minor !== undefined) {
       return `>= ${major}.${minor} < ${+major + 1}.0`;
     }
+    if (major !== undefined) {
+      return `>= ${major}.0.0 < ${+major + 1}.0.0`;
+    }
     throw new Error(`Invalid RubyGem version specifier: ${specifier}`);
-  } else {
-    return specifier;
   }
+
+  return specifier;
 }
 
 class RubyGemsStrategy extends DependencyStrategy {

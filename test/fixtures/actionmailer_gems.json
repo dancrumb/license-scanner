@@ -1,0 +1,47 @@
+{
+  "name": "actionmailer",
+  "downloads": 80353682,
+  "version": "5.0.1",
+  "version_downloads": 270760,
+  "platform": "ruby",
+  "authors": "David Heinemeier Hansson",
+  "info": "Email on Rails. Compose, deliver, receive, and test emails using the familiar controller/view pattern. First-class support for multipart email and attachments.",
+  "licenses": [
+    "MIT"
+  ],
+  "metadata": {},
+  "sha": "2875da6705900bb230fd7be8f32e817115dafaaff2cb42b41c33295c0288b089",
+  "project_uri": "https://rubygems.org/gems/actionmailer",
+  "gem_uri": "https://rubygems.org/gems/actionmailer-5.0.1.gem",
+  "homepage_uri": "http://rubyonrails.org",
+  "wiki_uri": null,
+  "documentation_uri": "http://www.rubydoc.info/gems/actionmailer/5.0.1",
+  "mailing_list_uri": null,
+  "source_code_uri": null,
+  "bug_tracker_uri": null,
+  "dependencies": {
+    "development": [],
+    "runtime": [
+      {
+        "name": "actionpack",
+        "requirements": "= 5.0.1"
+      },
+      {
+        "name": "actionview",
+        "requirements": "= 5.0.1"
+      },
+      {
+        "name": "activejob",
+        "requirements": "= 5.0.1"
+      },
+      {
+        "name": "mail",
+        "requirements": "\u003e= 2.5.4, ~\u003e 2.5"
+      },
+      {
+        "name": "rails-dom-testing",
+        "requirements": "~\u003e 2.0"
+      }
+    ]
+  }
+}
